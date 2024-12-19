@@ -1,29 +1,52 @@
-# The title is the title of your Add-On
-title: Hello World
-# The description will be shown above the form when activating the Add-On
-description: This is an updated simple test add-on
-# Optional instructions field to describe how to use the Add-On
-instructions: This is a sample instruction.
-# Top level type should always be object
+title: Disclose DREAL Corse Scraper
+description: Custom scraper for www.corse.developpement-durable.gouv.fr
+instructions: ''
 type: object
-# How does this add-on accept documents
-# If more than one type is specified, the user will be prompted to choose one
-documents:
-  # By the currently selected documents
-  - selected
-  # By the current search query
-  - query
-# Properties are the fields for your form
 properties:
-  # the key is the name of the variable that will be returned to your code
-  name:
-    # the title is what will be shown as the form label
-    title: Name
-    # a string is text
+  run_name: 
+    title: Run name
     type: string
-# Categories are what type of Add-On this is. Used to sort the Add-On in the Add-On menu. 
+    description: Name to identify this run among others on DocumentCloud's interface
+  project:
+    title: Project
+    type: string
+    description: >-
+      The DocumentCloud project title or ID of the project the documents should
+      be uploaded to.  If the project title does not exist, it will be created.
+  access_level:
+    title: Access level (public, private, organization)
+    type: string
+    default: private
+  target_year:
+    title: Year to scrape
+    description: leave blank for current year
+    type: integer
+  upload_limit:
+    title: Maximum number of documents to upload (per run)
+    description: 0 for not limit
+    type: integer
+    default: 0
+  time_limit:
+    title: Maximum number of minutes the scraper should run
+    description: 0 for not limit. Default = 5h45 to prevent hitting the GitHub actions 6h limit.
+    type: integer
+    default: 345
+  dry_run:
+    title: Dry run
+    type: boolean
+    description: If true, documents are not uploaded, and event data is not updated.
+    default: false
+  upload_event_data:
+    title: Upload event_data to DocumentCloud's interface
+    type: boolean
+    default: false
+required: 
+  - project
 categories: 
-  - file
-# Acceptable categories are premium, ai, export, bulk, file,  monitor, statistical, and extraction. 
-# You can read more about DocumentCloud Add-On categories here: https://www.documentcloud.org/help/add-ons#types-of-add-ons
-version: 2
+  - monitor
+eventOptions:
+  name: run_name
+  events:
+    - hourly
+    - daily
+    - weekly
