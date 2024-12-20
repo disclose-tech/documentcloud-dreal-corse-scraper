@@ -249,6 +249,7 @@ communes_2B = [
     "oletta",
     "olmeta-di-capocorso",
     "olmeta-di-tuda",
+    "olmeto-di-tuda",  # typo
     "olmi-cappella",
     "olmo",
     "omessa",
@@ -322,6 +323,7 @@ communes_2B = [
     "santa-lucia-di-moriani",
     "santa-maria-di-lota",
     "santa-maria-poggio",
+    "santa-maria-di-poggio",
     "santa-reparata-di-balagna",
     "santa-reparata-di-moriani",
     "santo-pietro-di-tenda",

@@ -48,4 +48,5 @@ class DocumentItem(Item):
     departments_sources = Field()
     department_from_scraper = Field()
 
-    commune = Field()
+    communes = Field()
+    commune_string = Field()

@@ -109,6 +109,15 @@ class BeautifyPipeline:
         item["title"] = item["title"].strip()
         item["title"] = item["title"][0].upper() + item["title"][1:]
 
+        # Commune
+
+        adapter = ItemAdapter(item)
+        if adapter.get("commune_string"):
+            item["commune_string"] = (
+                item["commune_string"].replace(" ", " ").replace("’", "'")
+            )
+            item["commune_string"] = item["commune_string"].strip()
+
         return item
 
 
@@ -132,48 +141,73 @@ class TagDepartmentsPipeline:
 
     def process_item(self, item, spider):
 
-        def has_commune_match(commune_string, project_name):
+        def has_commune_match(commune_from_list, commune_from_doc):
 
             if (
-                re.search(rf"\b{c}\b", project_name, re.IGNORECASE)
-                or re.search(rf"\b{c.replace(' ', '-')}\b", project_name, re.IGNORECASE)
-                or re.search(rf"\b{c.replace('-', ' ')}\b", project_name, re.IGNORECASE)
+                commune_from_list == commune_from_doc.lower()
+                or commune_from_list.replace(" ", "-") == commune_from_doc.lower()
+                or commune_from_list.replace("-", " ") == commune_from_doc.lower()
             ):
                 return True
             else:
                 return False
 
-        def extract_commune_from_project(project_name):
+        def extract_commune_str_from_project(project_name):
 
             match = re.search(
-                r"sur(?: les? territoires? des?)?(?: la| les)? communes? (?:d'|de )(.*?(?: et (.*?))?),",
+                r"sur(?: les? territoires? des?)?(?: la| les)? communes? (?:d'|de la |de l'|du |de )(.*?(?: et (.*?))?),",
                 project_name,
             )
 
             if match:
-                commune = match.group(1)
+                commune_string = match.group(1)
             else:
-                commune = ""
+                commune_string = ""
+                spider.logger.warning(
+                    f'Could not find municipalities in project name "{project_name}"'
+                )
 
-            return commune
+            return commune_string
+
+        def extract_communes_list_from_str(commune_string):
+            if " et " in commune_string:
+                communes = commune_string.split(" et ")
+            elif " - " in item["commune_string"]:
+                communes = commune_string.split(" - ")
+            else:
+                communes = [commune_string]
+
+            communes = [c.strip() for c in communes]
+
+            return communes
 
         adapter = ItemAdapter(item)
-        if not adapter.get("commune"):
-            item["commune"] = extract_commune_from_project(item["project"])
+        if not adapter.get("commune_string"):
+            item["commune_string"] = extract_commune_str_from_project(item["project"])
+
+        item["communes"] = extract_communes_list_from_str(item["commune_string"])
 
         departments = []
 
-        for c in communes_2A:
-            if has_commune_match(c, item["commune"]):
-                departments.append("2A")
+        matched_communes = []
+        for com in item["communes"]:
+            for c2a in communes_2A:
+                if has_commune_match(c2a, com):
+                    departments.append("2A")
+                    matched_communes.append(c2a)
 
-        for c in communes_2B:
-            if has_commune_match(c, item["commune"]):
-                departments.append("2B")
+            for c2b in communes_2B:
+                if has_commune_match(c2b, com):
+                    departments.append("2B")
+                    matched_communes.append(c2b)
 
         if departments:
             item["departments"] = sorted(list(set(departments)))
             item["departments_sources"] = ["regex"]
+        else:
+            spider.logger.warning(
+                f"Failed to detect departments. string = {item['commune_string']}, communes = {item['communes']}, project_name= {item['project']}"
+            )
 
         return item
 

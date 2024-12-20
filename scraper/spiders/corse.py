@@ -197,7 +197,7 @@ class CorseSpider(scrapy.Spider):
                 source_scraper=f"DREAL Corse Scraper {self.target_year}",
             )
             if "commune" in file_link:
-                doc_item["commune"] = file_link["commune"]
+                doc_item["commune_string"] = file_link["commune"]
 
             # Get source_file_url and check event_data
             source_file_url = response.urljoin(file_link["url"])
@@ -350,7 +350,7 @@ class CorseSpider(scrapy.Spider):
                             zip_seen_supported_files=zip_seen_supported_files,
                             file_from_zip=True,
                             year=str(self.target_year),
-                            # commune=doc_item["commune"],
+                            commune_string=doc_item["commune_string"],
                         )
                 else:
                     self.logger.info(
