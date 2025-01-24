@@ -17,8 +17,12 @@ properties:
     title: Access level (public, private, organization)
     type: string
     default: private
-  target_year:
-    title: Year to scrape
+  from_year:
+    title: Year to scrape from
+    description: leave blank for current year
+    type: integer
+  to_year:
+    title: Year to scrape to (included)
     description: leave blank for current year
     type: integer
   upload_limit:

@@ -295,7 +295,7 @@ class UploadPipeline:
             "category": item["category"],
             "category_local": item["category_local"],
             "event_data_key": item["event_data_key"],
-            "source_scraper": f"DREAL Corse Scraper {spider.target_year}",
+            "source_scraper": f"DREAL Corse Scraper {item['year']}",
             "source_file_url": item["source_file_url"],
             "source_filename": item["source_filename"],
             "source_page_url": item["source_page_url"],
@@ -340,7 +340,7 @@ class UploadPipeline:
             spider.event_data["documents"][item["event_data_key"]] = {
                 "last_modified": last_modified,
                 "last_seen": now,
-                "target_year": spider.target_year,
+                "target_year": item["year"],
             }
             # Zip files
             if item["file_from_zip"]:
@@ -356,7 +356,7 @@ class UploadPipeline:
                     spider.event_data["zips"][item["source_file_url"]] = {
                         "last_modified": last_modified,
                         "last_seen": now,
-                        "target_year": spider.target_year,
+                        "target_year": item["year"],
                     }
 
             # Store event_data (# only from the web interface)
@@ -432,7 +432,7 @@ class MailPipeline:
 
             return item_string
 
-        subject = f"DREAL Corse Scraper {str(spider.target_year)} (New: {len(self.scraped_items)}) [{spider.run_name}]"
+        subject = f"DREAL Corse Scraper {str(spider.target_years[0])}-{str(spider.target_years[-1])} (New: {len(self.scraped_items)}) [{spider.run_name}]"
 
         content = f"SCRAPED ITEMS ({len(self.scraped_items)})\n\n" + "\n\n".join(
             [print_item(item) for item in self.scraped_items]

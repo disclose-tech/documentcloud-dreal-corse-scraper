@@ -54,7 +54,7 @@ class CorseSpider(scrapy.Spider):
             section_title = sec.css("::text").get().strip()
             section_url = sec.attrib["href"]
 
-            if str(self.target_year) in section_title:
+            if any([str(y) in section_title for y in self.target_years]):
 
                 yield response.follow(
                     section_url,
@@ -77,23 +77,13 @@ class CorseSpider(scrapy.Spider):
 
     def parse_year_page(self, response):
 
-        def process_file_link(title, url, project_name):
-
-            if url.endswith(".zip"):
-                yield response.follow(
-                    url,
-                    callback=self.parse_zip_file,
-                    cb_kwargs=dict(title=title, project_name=project_name),
-                )
-
-            else:
-                yield response.follow(
-                    url,
-                    callback=self.parse_document_headers,
-                    cb_kwargs=dict(title=title, project_name=project_name),
-                )
-
         self.logger.info(f"Scraping {response.request.url}")
+
+        # Get year from page title
+
+        page_title = response.css("#contenu h1.titre-article::text").get()
+
+        year_from_title = page_title.replace("Projets ", "")
 
         # Links are collected first, then yielded at the end of the function
 
@@ -191,10 +181,9 @@ class CorseSpider(scrapy.Spider):
                 title=file_link["title"],
                 source_page_url=response.request.url,
                 project=file_link["project_name"],
-                year=str(self.target_year),
+                year=year_from_title,
                 authority="Préfecture de région Corse",
                 category_local="Les décisions au cas par cas projets",
-                source_scraper=f"DREAL Corse Scraper {self.target_year}",
             )
             if "commune" in file_link:
                 doc_item["commune_string"] = file_link["commune"]
@@ -341,7 +330,6 @@ class CorseSpider(scrapy.Spider):
                             project=doc_item["project"],
                             category_local=doc_item["category_local"],
                             authority=doc_item["authority"],
-                            source_scraper=f"DREAL Corse Scraper {self.target_year}",
                             source_file_url=response.request.url,
                             source_filename=f.name,
                             source_page_url=doc_item["source_page_url"],
@@ -349,7 +337,7 @@ class CorseSpider(scrapy.Spider):
                             local_file_path=str(f),
                             zip_seen_supported_files=zip_seen_supported_files,
                             file_from_zip=True,
-                            year=str(self.target_year),
+                            year=doc_item["year"],
                             commune_string=doc_item["commune_string"],
                         )
                 else:
