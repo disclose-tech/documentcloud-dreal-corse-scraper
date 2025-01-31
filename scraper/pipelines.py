@@ -295,14 +295,14 @@ class UploadPipeline:
             "category": item["category"],
             "category_local": item["category_local"],
             "event_data_key": item["event_data_key"],
-            "source_scraper": f"DREAL Corse Scraper {item['year']}",
+            "source_scraper": "DREAL Corse Scraper",
+            "source_scraper_year": str(item["year"]),
             "source_file_url": item["source_file_url"],
             "source_filename": item["source_filename"],
             "source_page_url": item["source_page_url"],
             "publication_date": item["publication_date"],
             "publication_time": item["publication_time"],
             "publication_datetime": item["publication_datetime"],
-            "year": str(item["year"]),
             "project_id": item["project_id"],
         }
         if item["file_from_zip"]:
