@@ -207,6 +207,13 @@ communes_2B = [
     "giocatojo",
     "giuncaggio",
     "île-rousse",
+    "l'île-rousse",
+    "île rousse",
+    "l'île rousse",
+    "ile-rousse",
+    "l'ile-rousse",
+    "ile rousse",
+    "l'ile rousse",
     "isolaccio-di-fiumorbo",
     "lama",
     "lano",
@@ -251,6 +258,8 @@ communes_2B = [
     "olmeta-di-tuda",
     "olmeto-di-tuda",  # typo
     "olmi-cappella",
+    "olmi cappella",
+    "olmi capella",  # typo
     "olmo",
     "omessa",
     "ortale",
