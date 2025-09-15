@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import scrapy
 from scrapy.exceptions import CloseSpider
 from scrapy.http import Request
+import py7zr
 
 from documentcloud.constants import SUPPORTED_EXTENSIONS
 
@@ -221,7 +222,9 @@ class CorseSpider(scrapy.Spider):
         ).decode("utf-8")
 
         # Detect zip files and process them separately
-        if doc_item["source_file_url"].lower().endswith(".zip"):
+        if doc_item["source_file_url"].lower().endswith(".zip") or doc_item[
+            "source_file_url"
+        ].lower().endswith(".7z"):
             yield Request(
                 url=response.request.url,
                 callback=self.parse_zip_file,
@@ -257,8 +260,12 @@ class CorseSpider(scrapy.Spider):
             os.makedirs(extracted_files_folder)
 
         # Open Zip file and extract files
-        with ZipFile(f"./downloaded_zips/{filename}", "r") as zip_file:
-            zip_file.extractall(path=extracted_files_folder)
+        if doc_item["source_file_url"].lower().endswith(".zip"):
+            with ZipFile(f"./downloaded_zips/{filename}", "r") as zip_file:
+                zip_file.extractall(path=extracted_files_folder)
+        elif doc_item["source_file_url"].lower().endswith(".7z"):
+            with py7zr.SevenZipFile(f"./downloaded_zips/{filename}", "r") as archive:
+                archive.extractall(path=extracted_files_folder)
 
         # Delete zip file
         os.remove(f"./downloaded_zips/{filename}")
@@ -271,7 +278,7 @@ class CorseSpider(scrapy.Spider):
         nested_zip_files = [
             f
             for f in extracted_files_list
-            if f.is_file() and f.suffix.lower() == ".zip"
+            if f.is_file() and f.suffix.lower() in [".zip", ".7z"]
         ]
 
         while nested_zip_files:
@@ -283,8 +290,12 @@ class CorseSpider(scrapy.Spider):
                     os.makedirs(destination_folder)
 
                 # unzip
-                with ZipFile(str(nzf), "r") as zip_file:
-                    zip_file.extractall(path=destination_folder)
+                if str(nzf).lower().endswith(".zip"):
+                    with ZipFile(str(nzf), "r") as zip_file:
+                        zip_file.extractall(path=destination_folder)
+                elif str(nzf).lower().endswith(".7z"):
+                    with py7zr.SevenZipFile(str(nzf), "r") as archive:
+                        archive.extractall(path=destination_folder)
 
                 # delete original zip
                 os.remove(str(nzf))
@@ -294,7 +305,7 @@ class CorseSpider(scrapy.Spider):
             nested_zip_files = [
                 f
                 for f in extracted_files_list
-                if f.is_file() and f.suffix.lower() == ".zip"
+                if f.is_file() and f.suffix.lower() in [".zip", "7z"]
             ]
 
         # Make a list of seen files for event_data
