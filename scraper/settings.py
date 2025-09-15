@@ -99,10 +99,10 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = 1
 
 # Enable and configure HTTP caching (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-HTTPCACHE_ENABLED = True
-HTTPCACHE_EXPIRATION_SECS = 604800  # 7 days
+HTTPCACHE_ENABLED = False
+HTTPCACHE_IGNORE_HTTP_CODES = [503]
+HTTPCACHE_EXPIRATION_SECS = 86400 * 7  # days
 # HTTPCACHE_DIR = "httpcache"
-# HTTPCACHE_IGNORE_HTTP_CODES = []
 # HTTPCACHE_STORAGE = "scrapy.extensions.httpcache.FilesystemCacheStorage"
 
 # Set settings whose default value is deprecated to a future-proof value
@@ -117,9 +117,6 @@ RETRY_TIMES = 4
 
 # Development settings
 AUTOTHROTTLE_DEBUG = False
-HTTPCACHE_ENABLED = False
-HTTPCACHE_IGNORE_HTTP_CODES = [503]
-HTTPCACHE_EXPIRATION_SECS = 86400 * 5  # days
 DEPTH_STATS_VERBOSE = False
 LOG_LEVEL = "INFO"
 FEEDS = {
