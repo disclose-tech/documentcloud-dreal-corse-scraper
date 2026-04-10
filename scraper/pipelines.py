@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 import logging
 import json
 import hashlib
+import sys
 
 from itemadapter import ItemAdapter
 from scrapy.exceptions import DropItem
@@ -19,10 +20,24 @@ from .log import SilentDropItem
 from .departments import communes_2A, communes_2B
 
 
+class SpiderPipeline:
+    """Base class for pipelines that need access to the spider instance.
+
+    Provides from_crawler() to store spider as self.spider.
+    Inherit from this class instead of defining from_crawler() in each pipeline.
+    """
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        pipeline = cls()
+        pipeline.spider = crawler.spider
+        return pipeline
+
+
 class ParseDatePipeline:
     """Parse dates from scraped data."""
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         """Parse date from the extracted string."""
 
         # Publication date
@@ -46,7 +61,7 @@ class ParseDatePipeline:
 class CategoryPipeline:
     """Attribute the final category of the document."""
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         if "cas par cas" in item["category_local"].lower():
             item["category"] = "Cas par cas"
 
@@ -56,7 +71,7 @@ class CategoryPipeline:
 class SourceFilenamePipeline:
     """Adds the source_filename field based on source_file_url."""
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
 
         adapter = ItemAdapter(item)
 
@@ -70,44 +85,44 @@ class SourceFilenamePipeline:
 
 
 class BeautifyPipeline:
-    def process_item(self, item, spider):
+    def process_item(self, item):
         """Beautify & harmonize project & title names."""
         pass
-        # # Project
+        # # # Project
 
-        item["project"] = item["project"].strip()
-        item["project"] = item["project"].replace(" ", " ").replace("’", "'")
-        item["project"] = item["project"].rstrip(".,")
+        # item["project"] = item["project"].strip()
+        # item["project"] = item["project"].replace(" ", " ").replace("’", "'")
+        # item["project"] = item["project"].rstrip(".,")
 
-        # enlever "representé(e) par"
-        if re.search(r",? +représentée?(?: +par)?", item["project"]):
+        # # enlever "representé(e) par"
+        # if re.search(r",? +représentée?(?: +par)?", item["project"]):
 
-            item["project"] = re.sub(
-                r",? +représentée?(?: +par)? .*?( - |$)", r"\1", item["project"]
-            )
+        #     item["project"] = re.sub(
+        #         r",? +représentée?(?: +par)? .*?( - |$)", r"\1", item["project"]
+        #     )
 
-        item["project"] = item["project"][0].capitalize() + item["project"][1:]
+        # item["project"] = item["project"][0].capitalize() + item["project"][1:]
 
-        # # Title
+        # # # Title
 
-        if item["file_from_zip"]:
+        # if item["file_from_zip"]:
 
-            file_title = " - ".join(
-                # folder1/folder2/document.pdf => folder1 - folder2 - document
-                [
-                    x
-                    # folders
-                    for x in item["local_file_path"].split("/")[2:-1]
-                    # filename without extension
-                    + [os.path.splitext(os.path.basename(item["local_file_path"]))[0]]
-                ]
-            )
-            item["title"] += " " + file_title
+        #     file_title = " - ".join(
+        #         # folder1/folder2/document.pdf => folder1 - folder2 - document
+        #         [
+        #             x
+        #             # folders
+        #             for x in item["local_file_path"].split("/")[2:-1]
+        #             # filename without extension
+        #             + [os.path.splitext(os.path.basename(item["local_file_path"]))[0]]
+        #         ]
+        #     )
+        #     item["title"] += " " + file_title
 
-        item["title"] = item["title"].replace("_", " ")
-        item["title"] = item["title"].rstrip(".,")
-        item["title"] = item["title"].strip()
-        item["title"] = item["title"][0].upper() + item["title"][1:]
+        # item["title"] = item["title"].replace("_", " ")
+        # item["title"] = item["title"].rstrip(".,")
+        # item["title"] = item["title"].strip()
+        # item["title"] = item["title"][0].upper() + item["title"][1:]
 
         # Commune
 
@@ -121,13 +136,15 @@ class BeautifyPipeline:
         return item
 
 
-class UploadLimitPipeline:
+class UploadLimitPipeline(SpiderPipeline):
     """Sends the signal to close the spider once the upload limit is attained."""
 
-    def open_spider(self, spider):
+    def open_spider(self):
         self.number_of_docs = 0
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
+        spider = self.spider
+
         self.number_of_docs += 1
 
         if spider.upload_limit == 0 or self.number_of_docs <= spider.upload_limit:
@@ -137,9 +154,9 @@ class UploadLimitPipeline:
             raise SilentDropItem("Upload limit exceeded.")
 
 
-class TagDepartmentsPipeline:
+class TagDepartmentsPipeline(SpiderPipeline):
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
 
         def has_commune_match(commune_from_list, commune_from_doc):
 
@@ -163,7 +180,7 @@ class TagDepartmentsPipeline:
                 commune_string = match.group(1)
             else:
                 commune_string = ""
-                spider.logger.warning(
+                self.spider.logger.warning(
                     f'Could not find municipalities in project name "{project_name}"'
                 )
 
@@ -172,7 +189,7 @@ class TagDepartmentsPipeline:
         def extract_communes_list_from_str(commune_string):
             if " et " in commune_string:
                 communes = commune_string.split(" et ")
-            elif " - " in item["commune_string"]:
+            elif " - " in commune_string:
                 communes = commune_string.split(" - ")
             else:
                 communes = [commune_string]
@@ -205,7 +222,7 @@ class TagDepartmentsPipeline:
             item["departments"] = sorted(list(set(departments)))
             item["departments_sources"] = ["regex"]
         else:
-            spider.logger.warning(
+            self.spider.logger.warning(
                 f"Failed to detect departments. string = {item['commune_string']}, communes = {item['communes']}, project_name= {item['project']}"
             )
 
@@ -214,7 +231,7 @@ class TagDepartmentsPipeline:
 
 class ProjectIDPipeline:
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
 
         project_name = item["project"]
         source_page_url = item["source_page_url"]
@@ -228,10 +245,11 @@ class ProjectIDPipeline:
         return item
 
 
-class UploadPipeline:
+class UploadPipeline(SpiderPipeline):
     """Upload document to DocumentCloud & store event data."""
 
-    def open_spider(self, spider):
+    def open_spider(self):
+        spider = self.spider
 
         documentcloud_logger = logging.getLogger("documentcloud")
         documentcloud_logger.setLevel(logging.WARNING)
@@ -270,7 +288,8 @@ class UploadPipeline:
             spider.logger.info("No event data was loaded.")
             spider.event_data = {"documents": {}, "zips": {}}
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
+        spider = self.spider
 
         filename, file_extension = os.path.splitext(item["source_filename"])
         file_extension = file_extension.lower()
@@ -365,8 +384,10 @@ class UploadPipeline:
 
         return item
 
-    def close_spider(self, spider):
+    def close_spider(self):
         """Update event data when the spider closes."""
+
+        spider = self.spider
 
         if not spider.dry_run and spider.run_id:
             if spider.event_data:
@@ -401,19 +422,21 @@ class UploadPipeline:
                 spider.logger.info("No event data to write.")
 
 
-class MailPipeline:
+class MailPipeline(SpiderPipeline):
     """Send scraping run report when the spider closes."""
 
-    def open_spider(self, spider):
+    def open_spider(self):
         self.scraped_items = []
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
 
         self.scraped_items.append(item)
 
         return item
 
-    def close_spider(self, spider):
+    def close_spider(self):
+
+        spider = self.spider
 
         def print_item(item):
             item_string = f"""
@@ -456,13 +479,13 @@ class MailPipeline:
 class DeleteZipFilesPipeline:
     """Delete files from downloaded zips to save some disk space"""
 
-    def process_item(self, item, spider):
+    def process_item(self, item):
         if item["file_from_zip"]:
             if os.path.isfile(item["local_file_path"]):
                 os.remove(item["local_file_path"])
         return item
 
-    def close_spider(self, spider):
+    def close_spider(self):
         # Delete the downloaded_zips folder
         if os.path.isdir("downloaded_zips"):
             shutil.rmtree("downloaded_zips")
