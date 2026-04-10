@@ -432,7 +432,14 @@ class MailPipeline:
 
             return item_string
 
-        subject = f"DREAL Corse Scraper {str(spider.target_years[0])}-{str(spider.target_years[-1])} (New: {len(self.scraped_items)}) [{spider.run_name}]"
+        if len(spider.target_years) == 1:
+            year_range_str = str(spider.target_years[0])
+        else:
+            year_range_str = (
+                f"{str(spider.target_years[0])}-{str(spider.target_years[-1])}"
+            )
+
+        subject = f"DREAL Corse Scraper {year_range_str} (New: {len(self.scraped_items)}) [{spider.run_name}]"
 
         content = f"SCRAPED ITEMS ({len(self.scraped_items)})\n\n" + "\n\n".join(
             [print_item(item) for item in self.scraped_items]
