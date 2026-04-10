@@ -87,42 +87,41 @@ class SourceFilenamePipeline:
 class BeautifyPipeline:
     def process_item(self, item):
         """Beautify & harmonize project & title names."""
-        pass
-        # # # Project
+        # # Project
 
-        # item["project"] = item["project"].strip()
-        # item["project"] = item["project"].replace(" ", " ").replace("’", "'")
-        # item["project"] = item["project"].rstrip(".,")
+        item["project"] = item["project"].strip()
+        item["project"] = item["project"].replace(" ", " ").replace("’", "'")
+        item["project"] = item["project"].rstrip(".,")
 
-        # # enlever "representé(e) par"
-        # if re.search(r",? +représentée?(?: +par)?", item["project"]):
+        # enlever "representé(e) par"
+        if re.search(r",? +représentée?(?: +par)?", item["project"]):
 
-        #     item["project"] = re.sub(
-        #         r",? +représentée?(?: +par)? .*?( - |$)", r"\1", item["project"]
-        #     )
+            item["project"] = re.sub(
+                r",? +représentée?(?: +par)? .*?( - |$)", r"\1", item["project"]
+            )
 
-        # item["project"] = item["project"][0].capitalize() + item["project"][1:]
+        item["project"] = item["project"][0].capitalize() + item["project"][1:]
 
-        # # # Title
+        # # Title
 
-        # if item["file_from_zip"]:
+        if item["file_from_zip"]:
 
-        #     file_title = " - ".join(
-        #         # folder1/folder2/document.pdf => folder1 - folder2 - document
-        #         [
-        #             x
-        #             # folders
-        #             for x in item["local_file_path"].split("/")[2:-1]
-        #             # filename without extension
-        #             + [os.path.splitext(os.path.basename(item["local_file_path"]))[0]]
-        #         ]
-        #     )
-        #     item["title"] += " " + file_title
+            file_title = " - ".join(
+                # folder1/folder2/document.pdf => folder1 - folder2 - document
+                [
+                    x
+                    # folders
+                    for x in item["local_file_path"].split("/")[2:-1]
+                    # filename without extension
+                    + [os.path.splitext(os.path.basename(item["local_file_path"]))[0]]
+                ]
+            )
+            item["title"] += " " + file_title
 
-        # item["title"] = item["title"].replace("_", " ")
-        # item["title"] = item["title"].rstrip(".,")
-        # item["title"] = item["title"].strip()
-        # item["title"] = item["title"][0].upper() + item["title"][1:]
+        item["title"] = item["title"].replace("_", " ")
+        item["title"] = item["title"].rstrip(".,")
+        item["title"] = item["title"].strip()
+        item["title"] = item["title"][0].upper() + item["title"][1:]
 
         # Commune
 
