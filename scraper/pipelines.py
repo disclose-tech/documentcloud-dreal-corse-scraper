@@ -247,6 +247,9 @@ class ProjectIDPipeline:
 class UploadPipeline(SpiderPipeline):
     """Upload document to DocumentCloud & store event data."""
 
+    # Number of uploads between two saves of the event data on DocumentCloud
+    EVENT_DATA_SAVE_INTERVAL = 25
+
     def open_spider(self):
         spider = self.spider
 
@@ -254,6 +257,10 @@ class UploadPipeline(SpiderPipeline):
         documentcloud_logger.setLevel(logging.WARNING)
         squarelet_logger = logging.getLogger("squarelet")
         squarelet_logger.setLevel(logging.WARNING)
+
+        # True when spider.event_data differs from what is stored on DocumentCloud
+        self.has_unsaved_changes = False
+        self.unsaved_uploads = 0
 
         if not spider.dry_run:
             try:
@@ -288,6 +295,27 @@ class UploadPipeline(SpiderPipeline):
         else:
             spider.logger.info("No event data was loaded.")
             spider.event_data = {"documents": {}, "zips": {}}
+
+    def store_event_data(self):
+        """Stores the event data on DocumentCloud (only from the web interface)."""
+
+        spider = self.spider
+
+        if spider.dry_run or not spider.run_id:
+            return
+
+        try:
+            spider.store_event_data(spider.event_data)
+        except Exception as e:
+            # Kept in memory: stored with the next batch or when the spider closes
+            spider.logger.warning(f"Error storing event data: {e!r}")
+        else:
+            self.has_unsaved_changes = False
+            self.unsaved_uploads = 0
+            spider.logger.info(
+                f"Stored event data ({len(spider.event_data['documents'])} documents, {len(spider.event_data['zips'])} zip files, "
+                f"{len(json.dumps(spider.event_data)) / 1000:.1f} KB)"
+            )
 
     def process_item(self, item):
         spider = self.spider
@@ -378,10 +406,12 @@ class UploadPipeline(SpiderPipeline):
                         "last_seen": now,
                         "target_year": item["year"],
                     }
+            self.has_unsaved_changes = True
+            self.unsaved_uploads += 1
 
-            # Store event_data (# only from the web interface)
-            if spider.run_id and not spider.dry_run:
-                spider.store_event_data(spider.event_data)
+            # Save event data by batches of uploads
+            if self.unsaved_uploads >= self.EVENT_DATA_SAVE_INTERVAL:
+                self.store_event_data()
 
         return item
 
@@ -392,10 +422,10 @@ class UploadPipeline(SpiderPipeline):
 
         if not spider.dry_run and spider.run_id:
             if spider.event_data:
-                spider.store_event_data(spider.event_data)
-                spider.logger.info(
-                    f"Uploaded event data ({len(spider.event_data['documents'])} documents, {len(spider.event_data['zips'])} zip files)"
-                )
+                if self.has_unsaved_changes:
+                    self.store_event_data()
+                else:
+                    spider.logger.info("No changes to event data, not storing it.")
                 # Upload the event_data to the DocumentCloud interface
                 now = datetime.datetime.now()
                 timestamp = now.strftime("%Y%m%d_%H%M")
