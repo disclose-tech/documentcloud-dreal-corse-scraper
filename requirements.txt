@@ -6,7 +6,7 @@
 #
 aiohappyeyeballs==2.7.1
     # via aiohttp
-aiohttp==3.14.3
+aiohttp==3.14.5
     # via scrapy
 aiosignal==1.4.0
     # via aiohttp
@@ -21,11 +21,11 @@ backports-zstd==1.7.0
     # via
     #   py7zr
     #   scrapy
-brotli==1.2.0
+brotli==1.2.1
     # via
     #   py7zr
     #   scrapy
-certifi==2026.7.22
+certifi==2026.10.23
     # via requests
 cffi==2.1.1
     # via cryptography
@@ -48,7 +48,7 @@ defusedxml==0.7.1
     # via scrapy
 fastjsonschema==2.22.2
     # via python-documentcloud
-filelock==3.32.7
+filelock==4.2.4
     # via tldextract
 frozenlist==1.8.0
     # via
@@ -85,7 +85,7 @@ lxml==6.1.3
     # via
     #   parsel
     #   scrapy
-multidict==6.8.0
+multidict==7.2.1
     # via
     #   aiohttp
     #   yarl
