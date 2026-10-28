@@ -50,8 +50,8 @@ class DiscloseDREALCorseScraper(AddOn):
 
         if access_level not in ["public", "organization", "private"]:
             self.set_message(
-                "Incorrect Access level.",
-                "Must be 'public', 'organization' or 'private'.",
+                "Incorrect Access level. "
+                "Must be 'public', 'organization' or 'private'."
             )
             sys.exit(1)
 
